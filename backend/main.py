@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import json
 import io
-import tflite_runtime.interpreter as tflite
+from tensorflow import lite as tflite
 
 # ============================================================
 # CONFIGURATION — update this path if needed
@@ -16,7 +16,7 @@ LABELS_PATH = "class_labels.json"
 # LOAD MODEL AND LABELS (runs once when server starts)
 # ============================================================
 print("Loading EfficientNetB0 model...")
-interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
+interpreter = tflite.Interpreter(model_path=MODEL_PATH)
 interpreter.allocate_tensors()
 input_details  = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
