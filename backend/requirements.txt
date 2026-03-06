@@ -3,4 +3,4 @@ uvicorn
 pillow
 numpy
 tflite-runtime
-python-multipart
+opencv-python-headless
