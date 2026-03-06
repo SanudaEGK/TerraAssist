@@ -1,10 +1,10 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-import tensorflow as tf
 import numpy as np
 from PIL import Image
 import json
 import io
+import tflite_runtime.interpreter as tflite
 
 # ============================================================
 # CONFIGURATION — update this path if needed
