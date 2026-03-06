@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import json
 import io
-from tensorflow import lite as tflite
+import tflite_runtime.interpreter as tflite
 
 # ============================================================
 # CONFIGURATION — update this path if needed
