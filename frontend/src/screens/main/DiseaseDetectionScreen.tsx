@@ -1,97 +1,68 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import {
+  View, Text, StyleSheet, TouchableOpacity, Image,
+  ActivityIndicator, Alert, ScrollView
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { analyzeLeafImage, DiseasePredictionResponse } from '../../services/api/huggingFace';
+import { analyzeLeafImage } from '../../services/api/huggingFace';
 import { ref, push, set } from 'firebase/database';
 import { database } from '../../config/firebase';
-import { colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { getTodayDateString } from '../../utils/fertilizerLogic';
 
 type DiseaseScreenProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
 export default function DiseaseDetectionScreen() {
+  const { colors } = useTheme();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const navigation = useNavigation<DiseaseScreenProp>();
 
   const requestPermissions = async () => {
-    const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
-    const libraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    return cameraStatus.status === 'granted' && libraryStatus.status === 'granted';
+    const cam = await ImagePicker.requestCameraPermissionsAsync();
+    const lib = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    return cam.status === 'granted' && lib.status === 'granted';
   };
 
   const openCamera = async () => {
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) {
-      Alert.alert('Permission needed', 'Camera permissions are required');
-      return;
-    }
-
+    const ok = await requestPermissions();
+    if (!ok) { Alert.alert('Permission needed', 'Camera & gallery permissions are required'); return; }
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
+      mediaTypes: 'images',
+      allowsEditing: true, aspect: [1, 1], quality: 0.8,
     });
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setImageUri(result.assets[0].uri);
-    }
+    if (!result.canceled && result.assets.length > 0) setImageUri(result.assets[0].uri);
   };
 
   const openGallery = async () => {
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) {
-      Alert.alert('Permission needed', 'Gallery permissions are required');
-      return;
-    }
-
+    const ok = await requestPermissions();
+    if (!ok) { Alert.alert('Permission needed', 'Gallery permission is required'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
+      mediaTypes: 'images',
+      allowsEditing: true, aspect: [1, 1], quality: 0.8,
     });
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setImageUri(result.assets[0].uri);
-    }
+    if (!result.canceled && result.assets.length > 0) setImageUri(result.assets[0].uri);
   };
 
   const handleAnalyze = async () => {
-    if (!imageUri) {
-      Alert.alert('Error', 'Please select a leaf image first');
-      return;
-    }
-
+    if (!imageUri) { Alert.alert('Error', 'Please select a leaf image first'); return; }
     setAnalyzing(true);
     try {
       const response = await analyzeLeafImage(imageUri);
-      
-      // Save history to Firebase
-      // TODO: Replace 'dummy_url' with actual Firebase Storage URL if uploading the image later
       const parsedDisease = response.predicted_class.replace(/_/g, ' ');
-
       const historyRef = ref(database, 'terrarium/disease_history');
-      const newRecordRef = push(historyRef);
-      
-      const newRecord = {
+      const newRef = push(historyRef);
+      await set(newRef, {
         date: getTodayDateString(),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         disease: parsedDisease,
         confidence: response.confidence,
-        image_url: 'dummy_url_awaiting_storage', 
-        status: response.is_diseased ? 'untreated' : 'treated' // Healthy means no treatment needed
-      };
-
-      await set(newRecordRef, newRecord);
-
-      // Navigate to Alert Screen
+        status: response.is_diseased ? 'untreated' : 'treated',
+      });
       navigation.navigate('DiseaseAlert', { diseaseInfo: response });
-
     } catch (error: any) {
       Alert.alert('Analysis Failed', error.message);
     } finally {
@@ -99,161 +70,84 @@ export default function DiseaseDetectionScreen() {
     }
   };
 
+  const s = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background, paddingTop: 50 },
+    header: { paddingHorizontal: 20, marginBottom: 20 },
+    title: { fontSize: 26, fontWeight: 'bold', color: colors.primary },
+    scroll: { paddingHorizontal: 20, paddingBottom: 40 },
+    imageCard: {
+      backgroundColor: colors.cardBackground, borderRadius: 16, overflow: 'hidden',
+      height: 280, justifyContent: 'center', alignItems: 'center',
+      borderWidth: 1.5, borderColor: colors.border, marginBottom: 16, borderStyle: 'dashed',
+    },
+    previewImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+    placeholder: { alignItems: 'center' },
+    placeholderIcon: { fontSize: 64, opacity: 0.4, marginBottom: 8 },
+    placeholderText: { color: colors.textLight, fontSize: 14 },
+    buttonRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
+    mediaBtn: {
+      flex: 1, backgroundColor: colors.cardBackground, padding: 14, borderRadius: 12,
+      alignItems: 'center', borderWidth: 1, borderColor: colors.primary,
+      flexDirection: 'row', justifyContent: 'center', gap: 6,
+    },
+    mediaBtnText: { color: colors.primary, fontWeight: 'bold', fontSize: 14 },
+    analyzeBtn: {
+      backgroundColor: colors.primary, padding: 16, borderRadius: 12,
+      alignItems: 'center',
+      shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35, shadowRadius: 6, elevation: 4,
+    },
+    analyzeBtnDisabled: { opacity: 0.5 },
+    analyzeBtnText: { color: '#fff', fontSize: 17, fontWeight: 'bold' },
+    loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  });
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Plant Health Check</Text>
+    <View style={s.container}>
+      <View style={s.header}>
+        <Text style={s.title}>Plant Health Check</Text>
       </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.stepContainer}>
-          <Text style={styles.stepTitle}>Step 1 — Select Image</Text>
-          
-          <View style={styles.imageCard}>
-            {imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.previewImage} />
-            ) : (
-              <View style={styles.placeholderImage}>
-                <Text style={styles.placeholderIcon}>🌿</Text>
-                <Text style={styles.placeholderText}>No image selected</Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.mediaButton} onPress={openCamera}>
-              <Text style={styles.mediaIcon}>📷</Text>
-              <Text style={styles.mediaButtonText}>Open Camera</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.mediaButton} onPress={openGallery}>
-              <Text style={styles.mediaIcon}>🖼️</Text>
-              <Text style={styles.mediaButtonText}>Gallery</Text>
-            </TouchableOpacity>
-          </View>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        {/* Image Preview */}
+        <View style={s.imageCard}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={s.previewImage} />
+          ) : (
+            <View style={s.placeholder}>
+              <Text style={s.placeholderIcon}>🌿</Text>
+              <Text style={s.placeholderText}>No image selected</Text>
+            </View>
+          )}
         </View>
 
-        <View style={styles.stepContainer}>
-          <Text style={styles.stepTitle}>Step 2 — Analyze</Text>
-          
-          <TouchableOpacity 
-            style={[styles.analyzeButton, !imageUri && styles.analyzeButtonDisabled]} 
-            onPress={handleAnalyze}
-            disabled={!imageUri || analyzing}
-          >
-            {analyzing ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator color={colors.secondary} size="small" />
-                <Text style={styles.analyzeButtonText}>Analyzing your plant...</Text>
-              </View>
-            ) : (
-              <Text style={styles.analyzeButtonText}>Analyze Leaf 🔍</Text>
-            )}
+        {/* Camera / Gallery buttons */}
+        <View style={s.buttonRow}>
+          <TouchableOpacity style={s.mediaBtn} onPress={openCamera}>
+            <Text>📷</Text>
+            <Text style={s.mediaBtnText}>Camera</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.mediaBtn} onPress={openGallery}>
+            <Text>🖼️</Text>
+            <Text style={s.mediaBtnText}>Gallery</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Analyze button */}
+        <TouchableOpacity
+          style={[s.analyzeBtn, (!imageUri || analyzing) && s.analyzeBtnDisabled]}
+          onPress={handleAnalyze}
+          disabled={!imageUri || analyzing}
+        >
+          {analyzing ? (
+            <View style={s.loadingRow}>
+              <ActivityIndicator color="#fff" size="small" />
+              <Text style={s.analyzeBtnText}>Analyzing...</Text>
+            </View>
+          ) : (
+            <Text style={s.analyzeBtnText}>Analyze Leaf 🔍</Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 50,
-  },
-  header: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  stepContainer: {
-    marginBottom: 32,
-  },
-  stepTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  imageCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 16,
-    overflow: 'hidden',
-    height: 300,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 16,
-    borderStyle: 'dashed',
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  placeholderImage: {
-    alignItems: 'center',
-  },
-  placeholderIcon: {
-    fontSize: 64,
-    marginBottom: 8,
-    opacity: 0.5,
-  },
-  placeholderText: {
-    color: colors.textLight,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  mediaButton: {
-    flex: 1,
-    backgroundColor: colors.secondary,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginHorizontal: 4,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  mediaIcon: {
-    marginRight: 8,
-    fontSize: 18,
-  },
-  mediaButtonText: {
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
-  analyzeButton: {
-    backgroundColor: colors.primary,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  analyzeButtonDisabled: {
-    backgroundColor: colors.grey,
-    opacity: 0.7,
-  },
-  analyzeButtonText: {
-    color: colors.secondary,
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-});

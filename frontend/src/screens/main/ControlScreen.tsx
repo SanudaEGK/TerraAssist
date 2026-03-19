@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { ref, onValue, set } from 'firebase/database';
 import { database } from '../../config/firebase';
 import ControlCard from '../../components/ControlCard';
 import { calculateFertilizerDaysRemaining, getTodayDateString } from '../../utils/fertilizerLogic';
-import { colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 
 export default function ControlScreen() {
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [soilMoisture, setSoilMoisture] = useState<number>(0);
 
@@ -23,7 +24,6 @@ export default function ControlScreen() {
 
   useEffect(() => {
     const terrariumRef = ref(database, 'terrarium');
-
     const unsubscribe = onValue(terrariumRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -41,10 +41,7 @@ export default function ControlScreen() {
       }
       setLoading(false);
     });
-
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   const updateControl = async (device: string, value: any) => {
@@ -58,42 +55,31 @@ export default function ControlScreen() {
 
   const handleFanToggle = (isOn: boolean) => updateControl('fan', isOn ? 1 : 0);
   const handleFanModeToggle = (isAuto: boolean) => updateControl('fanMode', isAuto ? 'auto' : 'manual');
-
   const handleLightToggle = (isOn: boolean) => updateControl('growLight', isOn ? 1 : 0);
   const handleLightModeToggle = (isAuto: boolean) => updateControl('growLightMode', isAuto ? 'auto' : 'manual');
-
   const handleWaterPumpModeToggle = (isAuto: boolean) => updateControl('waterPumpMode', isAuto ? 'auto' : 'manual');
 
   const handleWaterPumpToggle = (isOn: boolean) => {
-    // Turning OFF is always allowed safely
     if (!isOn) {
       updateControl('waterPump', 0);
       return;
     }
-
-    // Turning ON requires checking soil moisture logic. > 2800 is Dry.
     if (soilMoisture <= 2800) {
       Alert.alert(
         'No water needed at this time.',
         'Please confirm if you want to add water.',
         [
           { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Confirm',
-            style: 'destructive',
-            onPress: () => updateControl('waterPump', 1)
-          }
+          { text: 'Confirm', style: 'destructive', onPress: () => updateControl('waterPump', 1) }
         ]
       );
     } else {
-      // Actually dry, turn on directly
       updateControl('waterPump', 1);
     }
   };
 
   const handleFertilizerToggle = (isOn: boolean) => {
     if (isOn) {
-      // Activate fertilizer and save today's date
       updateControl('fertilizerMotor', 1);
       updateControl('fertilizerLastActivated', getTodayDateString());
     } else {
@@ -103,7 +89,7 @@ export default function ControlScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -113,14 +99,12 @@ export default function ControlScreen() {
   const isFertilizerLocked = fertilizerDaysRemaining > 0 && controls.fertilizerLastActivated !== '';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Terrarium Controls</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Terrarium Controls</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
-        {/* Fan Control */}
         <ControlCard
           title="Fan"
           icon="🌀"
@@ -131,7 +115,6 @@ export default function ControlScreen() {
           onToggleMode={handleFanModeToggle}
         />
 
-        {/* Grow Light Control */}
         <ControlCard
           title="Grow Light"
           icon="💡"
@@ -142,7 +125,6 @@ export default function ControlScreen() {
           onToggleMode={handleLightModeToggle}
         />
 
-        {/* Water Pump Control */}
         <ControlCard
           title="Water Pump"
           icon="🚿"
@@ -153,49 +135,27 @@ export default function ControlScreen() {
           onToggleMode={handleWaterPumpModeToggle}
         />
 
-        {/* Fertilizer Control (Manual Only logic as per prompt implicitly, no mode toggle mentioned, but we will keep consistent UI) */}
         <ControlCard
           title="Fertilizer"
           icon="🌾"
-          isAuto={false} // Assuming fertilizer doesn't have an auto/manual mode switch based on prompt description
+          isAuto={false}
           isOn={controls.fertilizerMotor === 1}
-          autoMessage="" // Not used since isAuto is false
+          autoMessage=""
           onToggleDevice={handleFertilizerToggle}
-          // mode toggle is hidden by passing isAuto={false} and adjusting card if we want, or stubbing it
           onToggleMode={() => { }}
           disabledOverride={isFertilizerLocked}
           overrideMessage={`Available in ${fertilizerDaysRemaining} days. (Last added ${30 - fertilizerDaysRemaining} days ago)`}
           customStatusLabel={isFertilizerLocked ? 'Locked' : (controls.fertilizerMotor === 1 ? 'Transmitting ON' : 'Ready')}
         />
-
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 50,
-  },
-  centerContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
+  container: { flex: 1, paddingTop: 50 },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  header: { paddingHorizontal: 20, marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: 'bold' },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
 });

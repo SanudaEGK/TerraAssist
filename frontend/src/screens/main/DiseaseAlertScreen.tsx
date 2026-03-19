@@ -64,7 +64,7 @@ export default function DiseaseAlertScreen() {
           <Text style={styles.guideText}>Brown spots, yellow patches, leaf curling.</Text>
 
           <Text style={styles.guideSubTitle}>Treatment Steps:</Text>
-          <Text style={styles.guideBullet}>1. Check and adjust soil pH to 6.0–6.5.</Text>
+          <Text style={styles.guideBullet}>1. Check and adjust soil moisture level.</Text>
           <Text style={styles.guideBullet}>2. Flush soil with clean water to reduce mineral buildup.</Text>
           <Text style={styles.guideBullet}>3. Reduce fertilizer — do not add more for at least 30 days.</Text>
           <Text style={styles.guideBullet}>4. Replace top layer of soil if problem persists.</Text>

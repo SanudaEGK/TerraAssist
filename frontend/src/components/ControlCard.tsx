@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Switch, StyleSheet } from 'react-native';
-import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 interface ControlCardProps {
   title: string;
@@ -27,33 +27,33 @@ export default function ControlCard({
   overrideMessage = '',
   customStatusLabel
 }: ControlCardProps) {
-  
+  const { colors } = useTheme();
   const isDeviceToggleDisabled = isAuto || disabledOverride;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.headerRow}>
+    <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+      <View style={[styles.headerRow, { borderBottomColor: colors.grey }]}>
         <View style={styles.titleInfo}>
           <Text style={styles.icon}>{icon}</Text>
-          <Text style={styles.title}>{title}</Text>
+          <Text style={[styles.title, { color: colors.primary }]}>{title}</Text>
         </View>
 
         <View style={styles.modeToggleContainer}>
-          <Text style={[styles.modeLabel, !isAuto && styles.activeModeColor]}>MANUAL</Text>
+          <Text style={[styles.modeLabel, { color: !isAuto ? colors.primary : colors.textLight }]}>MANUAL</Text>
           <Switch
             trackColor={{ false: colors.grey, true: colors.primary }}
             thumbColor={colors.secondary}
-            onValueChange={(val) => onToggleMode(!val)} // Switch true means MANUAL, false means AUTO in this logic
+            onValueChange={(val) => onToggleMode(!val)}
             value={!isAuto}
           />
-          <Text style={[styles.modeLabel, isAuto && styles.activeModeColor]}>AUTO</Text>
+          <Text style={[styles.modeLabel, { color: isAuto ? colors.primary : colors.textLight }]}>AUTO</Text>
         </View>
       </View>
 
       {/* Main Control Area */}
       <View style={styles.controlRow}>
         <View style={styles.statusInfo}>
-          <Text style={styles.statusTitle}>Device Status</Text>
+          <Text style={[styles.statusTitle, { color: colors.textLight }]}>Device Status</Text>
           
           <Text style={[
             styles.statusValue, 
@@ -63,11 +63,11 @@ export default function ControlCard({
           </Text>
 
           {isAuto && (
-            <Text style={styles.autoMessageText}>{autoMessage}</Text>
+            <Text style={[styles.autoMessageText, { color: colors.textLight }]}>{autoMessage}</Text>
           )}
 
           {disabledOverride && !isAuto && (
-            <Text style={styles.overrideMessageText}>{overrideMessage}</Text>
+            <Text style={[styles.overrideMessageText, { color: colors.warning }]}>{overrideMessage}</Text>
           )}
         </View>
 
@@ -88,12 +88,10 @@ export default function ControlCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -106,7 +104,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.grey,
     paddingBottom: 12,
   },
   titleInfo: {
@@ -120,7 +117,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.primary,
   },
   modeToggleContainer: {
     flexDirection: 'row',
@@ -129,11 +125,7 @@ const styles = StyleSheet.create({
   modeLabel: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: colors.textLight,
     marginHorizontal: 4,
-  },
-  activeModeColor: {
-    color: colors.primary,
   },
   controlRow: {
     flexDirection: 'row',
@@ -146,7 +138,6 @@ const styles = StyleSheet.create({
   },
   statusTitle: {
     fontSize: 12,
-    color: colors.textLight,
     marginBottom: 4,
   },
   statusValue: {
@@ -155,13 +146,11 @@ const styles = StyleSheet.create({
   },
   autoMessageText: {
     fontSize: 12,
-    color: colors.textLight,
     marginTop: 4,
     fontStyle: 'italic',
   },
   overrideMessageText: {
     fontSize: 12,
-    color: colors.warning,
     marginTop: 4,
     fontWeight: '500',
   },

@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  KeyboardAvoidingView, Platform, ActivityIndicator
+} from 'react-native';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { colors } from '../../theme/colors';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-
-GoogleSignin.configure({
-  webClientId: '904864654739-sqs7hme0jq073ua8a1m7149dach9llcq.apps.googleusercontent.com', // User will need to replace this
-});
 
 type LoginScreenProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -19,6 +17,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation<LoginScreenProp>();
 
   const handleLogin = async () => {
@@ -27,39 +26,16 @@ export default function LoginScreen() {
       setError('Please fill in all fields');
       return;
     }
+    setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // Navigation to Main is handled automatically by RootNavigator listening to auth state
     } catch (e: any) {
       setError(e.message || 'Failed to login');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const response = await GoogleSignin.signIn();
-      const idToken = response.data?.idToken;
-
-      if (!idToken) {
-        throw new Error('No ID token found');
-      }
-
-      const googleCredential = GoogleAuthProvider.credential(idToken);
-      await signInWithCredential(auth, googleCredential);
-    } catch (error: any) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled the login flow
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        // operation (e.g. sign in) is in progress already
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        // play services not available or outdated
-        setError('Google Play Services not available');
-      } else {
-        setError(error.message || 'Google Sign-In failed');
-      }
-    }
-  };
 
   return (
     <KeyboardAvoidingView
@@ -69,6 +45,7 @@ export default function LoginScreen() {
       <View style={styles.header}>
         <Text style={styles.logoIcon}>🌿</Text>
         <Text style={styles.title}>Welcome Back</Text>
+        <Text style={styles.subtitle}>Sign in to TerraAssist</Text>
       </View>
 
       <View style={styles.form}>
@@ -98,22 +75,15 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword' as any)}>
           <Text style={styles.forgotPassword}>Forgot Password?</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
-          <Text style={styles.primaryButtonText}>Log In</Text>
-        </TouchableOpacity>
-
-        <View style={styles.dividerContainer}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>or log in with</Text>
-          <View style={styles.divider} />
-        </View>
-
-        <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
-          <Text style={styles.googleButtonText}>Continue with Google</Text>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleLogin} disabled={loading}>
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.primaryButtonText}>Log In</Text>
+          }
         </TouchableOpacity>
 
         <View style={styles.footer}>
@@ -139,7 +109,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logoIcon: {
-    fontSize: 48,
+    fontSize: 56,
     marginBottom: 10,
   },
   title: {
@@ -147,24 +117,30 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.primary,
   },
+  subtitle: {
+    fontSize: 14,
+    color: colors.textLight,
+    marginTop: 4,
+  },
   form: {
     width: '100%',
   },
   input: {
     backgroundColor: colors.secondary,
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.grey,
+    borderColor: colors.border,
     color: colors.text,
+    fontSize: 15,
   },
   passwordContainer: {
     flexDirection: 'row',
     backgroundColor: colors.secondary,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.grey,
+    borderColor: colors.border,
     marginBottom: 12,
     alignItems: 'center',
   },
@@ -172,74 +148,26 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     color: colors.text,
+    fontSize: 15,
   },
-  showHideBtn: {
-    padding: 16,
-  },
-  showHideText: {
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
-  errorText: {
-    color: colors.error,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  forgotPassword: {
-    color: colors.primary,
-    textAlign: 'right',
-    marginBottom: 24,
-    fontWeight: '600',
-  },
+  showHideBtn: { padding: 16 },
+  showHideText: { color: colors.primary, fontWeight: 'bold' },
+  errorText: { color: colors.error, marginBottom: 16, textAlign: 'center', fontSize: 13 },
+  forgotPassword: { color: colors.primary, textAlign: 'right', marginBottom: 24, fontWeight: '600' },
   primaryButton: {
     backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 16,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  primaryButtonText: {
-    color: colors.secondary,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.grey,
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    color: colors.textLight,
-  },
-  googleButton: {
-    backgroundColor: colors.secondary,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.grey,
-  },
-  googleButtonText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 32,
-  },
-  footerText: {
-    color: colors.textLight,
-  },
-  footerLink: {
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
+  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 32 },
+  footerText: { color: colors.textLight },
+  footerLink: { color: colors.primary, fontWeight: 'bold' },
 });
