@@ -28,7 +28,7 @@ export default function ControlCard({
   customStatusLabel
 }: ControlCardProps) {
   const { colors } = useTheme();
-  const isDeviceToggleDisabled = isAuto || disabledOverride;
+  const isDeviceToggleDisabled = disabledOverride;
 
   return (
     <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
@@ -38,7 +38,7 @@ export default function ControlCard({
           <Text style={[styles.title, { color: colors.primary }]}>{title}</Text>
         </View>
 
-        <View style={styles.modeToggleContainer}>
+        {/* <View style={styles.modeToggleContainer}>
           <Text style={[styles.modeLabel, { color: !isAuto ? colors.primary : colors.textLight }]}>MANUAL</Text>
           <Switch
             trackColor={{ false: colors.grey, true: colors.primary }}
@@ -47,7 +47,7 @@ export default function ControlCard({
             value={!isAuto}
           />
           <Text style={[styles.modeLabel, { color: isAuto ? colors.primary : colors.textLight }]}>AUTO</Text>
-        </View>
+        </View> */}
       </View>
 
       {/* Main Control Area */}
@@ -62,11 +62,11 @@ export default function ControlCard({
             {customStatusLabel ? customStatusLabel : (isOn ? 'Transmitting ON' : 'Transmitting OFF')}
           </Text>
 
-          {isAuto && (
+          {!!autoMessage && (
             <Text style={[styles.autoMessageText, { color: colors.textLight }]}>{autoMessage}</Text>
           )}
 
-          {disabledOverride && !isAuto && (
+          {disabledOverride && (
             <Text style={[styles.overrideMessageText, { color: colors.warning }]}>{overrideMessage}</Text>
           )}
         </View>

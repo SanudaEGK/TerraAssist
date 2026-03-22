@@ -9,6 +9,7 @@ import SignUpScreen from '../screens/auth/SignUpScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import MainTabNavigator from './MainTabNavigator';
 import DiseaseAlertScreen from '../screens/main/DiseaseAlertScreen';
+import PlantCameraScreen from '../screens/main/PlantCameraScreen';
 import { colors } from '../theme/colors';
 
 export type RootStackParamList = {
@@ -16,8 +17,9 @@ export type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;
   ForgotPassword: undefined;
-  Main: undefined;
+  Main: { screen: string } | undefined;
   DiseaseAlert: { diseaseInfo: any }; 
+  PlantCamera: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -49,6 +51,7 @@ export default function RootNavigator() {
           <Stack.Group>
             <Stack.Screen name="Main" component={MainTabNavigator} />
             <Stack.Screen name="DiseaseAlert" component={DiseaseAlertScreen} options={{ headerShown: true, title: 'Alert' }} />
+            <Stack.Screen name="PlantCamera" component={PlantCameraScreen} options={{ headerShown: true, title: 'Plant Camera' }} />
           </Stack.Group>
         )}
       </Stack.Navigator>

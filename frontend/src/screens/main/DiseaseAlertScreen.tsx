@@ -5,6 +5,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { colors } from '../../theme/colors';
 import { DiseasePredictionResponse } from '../../services/api/huggingFace';
+import { ref, set } from 'firebase/database';
+import { database } from '../../config/firebase';
 
 type DiseaseAlertRouteProp = RouteProp<RootStackParamList, 'DiseaseAlert'>;
 type DiseaseAlertNavigationProp = NativeStackNavigationProp<RootStackParamList, 'DiseaseAlert'>;
@@ -85,11 +87,18 @@ export default function DiseaseAlertScreen() {
   };
 
   const markAsTreated = () => {
-    // In a real app, you would pass the Firebase key from the DetectionScreen here 
-    // and update that specific record to { status: 'treated' }
-    Alert.alert('Success', 'Marked as Treated in history.', [
-      { text: 'OK', onPress: () => navigation.navigate('Main') }
-    ]);
+    if (diseaseInfo.isCameraAlert) {
+       // Clear the camera alert
+       set(ref(database, 'terrarium/latest_camera_alert/read'), true);
+       Alert.alert('Success', 'Camera alert marked as treated.', [
+         { text: 'OK', onPress: () => navigation.navigate('Main', { screen: 'Home' }) }
+       ]);
+    } else {
+       // Default behavior (though button is hidden for manual predictions)
+       Alert.alert('Success', 'Marked as Treated in history.', [
+         { text: 'OK', onPress: () => navigation.navigate('Main', { screen: 'Home' }) }
+       ]);
+    }
   };
 
   return (
@@ -105,7 +114,7 @@ export default function DiseaseAlertScreen() {
       
       <View style={styles.badgeRow}>
         <View style={styles.confidenceBadge}>
-          <Text style={styles.confidenceText}>{confidence.toFixed(1)}% Confident</Text>
+          <Text style={styles.confidenceText}>{Number(confidence).toFixed(1)}% Confident</Text>
         </View>
         
         {isDiseased && (
@@ -121,7 +130,7 @@ export default function DiseaseAlertScreen() {
       {renderTreatmentGuide()}
 
       <View style={styles.buttonContainer}>
-        {isDiseased && (
+        {isDiseased && diseaseInfo.isCameraAlert && (
           <TouchableOpacity style={styles.primaryButton} onPress={markAsTreated}>
             <Text style={styles.primaryButtonText}>Mark as Treated</Text>
           </TouchableOpacity>
@@ -129,7 +138,15 @@ export default function DiseaseAlertScreen() {
         
         <TouchableOpacity 
           style={[styles.secondaryButton, !isDiseased && { marginTop: 20 }]} 
-          onPress={() => navigation.navigate('Main')}
+          onPress={() => {
+            navigation.reset({
+              index: 0,
+              routes: [{ 
+                name: 'Main', 
+                params: { screen: 'Home' } 
+              }],
+            });
+          }}
         >
           <Text style={styles.secondaryButtonText}>Back to Home</Text>
         </TouchableOpacity>
