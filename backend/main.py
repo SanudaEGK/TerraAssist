@@ -7,15 +7,12 @@ from PIL import Image
 import json
 import io
 
-# ============================================================
-# CONFIGURATION — update this path if needed
-# ============================================================
+# CONFIGURATION
 MODEL_PATH  = "efficientnetb0.tflite"
 LABELS_PATH = "class_labels.json"
 
-# ============================================================
-# LOAD MODEL AND LABELS (runs once when server starts)
-# ============================================================
+# LOAD MODEL AND LABELS
+
 print("Loading EfficientNetB0 model...")
 interpreter = tflite.Interpreter(model_path=MODEL_PATH)
 interpreter.allocate_tensors()
@@ -30,9 +27,7 @@ CLASS_NAMES  = list(class_indices.keys())
 NUM_CLASSES  = len(CLASS_NAMES)
 print(f"Classes: {CLASS_NAMES}")
 
-# ============================================================
 # CREATE FASTAPI APP
-# ============================================================
 app = FastAPI(
     title="TerraAssist Disease Detection API",
     description="Upload a plant image and get disease prediction using EfficientNetB0",
@@ -47,18 +42,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============================================================
 # HELPER FUNCTIONS
-# ============================================================
-
 def preprocess_image(img_pil):
     """
     Resize and prepare image for EfficientNetB0.
     Note: EfficientNetB0 expects raw 0-255 pixel values (NOT divided by 255).
     """
     img_resized = img_pil.resize((224, 224))
-    arr = np.array(img_resized, dtype=np.float32)  # keep as 0-255
-    return np.expand_dims(arr, axis=0)              # shape: (1, 224, 224, 3)
+    arr = np.array(img_resized, dtype=np.float32)
+    return np.expand_dims(arr, axis=0)              
 
 
 def run_prediction(img_pil):
@@ -76,10 +68,7 @@ def run_prediction(img_pil):
 
     return predicted_class, confidence, all_probs
 
-# ============================================================
 # API ENDPOINTS
-# ============================================================
-
 @app.get("/")
 def root():
     """Health check — visit this to confirm the server is running."""
@@ -108,7 +97,7 @@ async def predict(file: UploadFile = File(...)):
     except Exception:
         return {"error": "Could not read image. Please upload a valid JPG or PNG file."}
 
-    # Step 3: Run prediction (reuses the same logic as test_model_locally.py)
+    # Step 3: Run prediction
     predicted_class, confidence, all_probs = run_prediction(img_pil)
 
     # Step 4: Determine plant status

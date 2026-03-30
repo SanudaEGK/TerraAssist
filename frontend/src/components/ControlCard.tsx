@@ -37,17 +37,6 @@ export default function ControlCard({
           <Text style={styles.icon}>{icon}</Text>
           <Text style={[styles.title, { color: colors.primary }]}>{title}</Text>
         </View>
-
-        {/* <View style={styles.modeToggleContainer}>
-          <Text style={[styles.modeLabel, { color: !isAuto ? colors.primary : colors.textLight }]}>MANUAL</Text>
-          <Switch
-            trackColor={{ false: colors.grey, true: colors.primary }}
-            thumbColor={colors.secondary}
-            onValueChange={(val) => onToggleMode(!val)}
-            value={!isAuto}
-          />
-          <Text style={[styles.modeLabel, { color: isAuto ? colors.primary : colors.textLight }]}>AUTO</Text>
-        </View> */}
       </View>
 
       {/* Main Control Area */}

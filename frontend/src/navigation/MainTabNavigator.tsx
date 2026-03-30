@@ -51,7 +51,6 @@ export default function MainTabNavigator() {
           const tabDef = TABS.find(t => t.name === route.name);
           const focused = props.accessibilityState?.selected;
           
-          // Custom Tab Button with "Pill" highlight and visual lift
           return (
             <TouchableOpacity
               activeOpacity={0.9}
@@ -62,7 +61,7 @@ export default function MainTabNavigator() {
                   borderTopWidth: 5, 
                   borderTopColor: colors.primary, 
                   marginTop: -1,
-                  backgroundColor: colors.primary + '15', // Subtle pill background
+                  backgroundColor: colors.primary + '15',
                   borderBottomLeftRadius: 10,
                   borderBottomRightRadius: 10,
                 },

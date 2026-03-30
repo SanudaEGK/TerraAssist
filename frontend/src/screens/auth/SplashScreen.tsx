@@ -19,7 +19,7 @@ export default function SplashScreen() {
       useNativeDriver: true,
     }).start();
 
-    // Auto-navigate to Login after 2.5 seconds
+    // Auto-navigate to Login
     const timer = setTimeout(() => {
       navigation.replace('Login');
     }, 2500);

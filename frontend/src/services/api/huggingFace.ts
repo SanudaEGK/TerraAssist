@@ -59,7 +59,7 @@ export const analyzeLeafImage = async (imageUri: string): Promise<DiseasePredict
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 30000, // 30 seconds — HuggingFace free tier can be slow on cold starts
+        timeout: 30000, 
       }
     );
 
